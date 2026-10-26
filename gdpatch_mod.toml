@@ -1,0 +1,7 @@
+id = "snaptic_zh"
+
+[meta]
+name = "SNAPTIC Chinese"
+version = "0.1.0"
+authors = ["killeromg003"]
+description = " Chinese menu text (runtime, no script or scene edits)"
