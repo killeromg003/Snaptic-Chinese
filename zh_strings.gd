@@ -78,14 +78,14 @@ const RICH := {
 
 
 static func zh(text: String) -> String:
- var key := text.strip_edges()
- if key != "" and TEXT.has(key):
- return text.replace(key, TEXT[key])
- return text
+	var key := text.strip_edges()
+	if key != "" and TEXT.has(key):
+		return text.replace(key, TEXT[key])
+	return text
 
 
 static func in_rich(text: String) -> String:
- var out := text
- for key in RICH:
- out = out.replace(key, RICH[key])
- return out
+	var out := text
+	for key in RICH:
+		out = out.replace(key, RICH[key])
+	return out

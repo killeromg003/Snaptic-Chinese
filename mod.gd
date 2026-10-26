@@ -1,10 +1,10 @@
 extends Node
 
-const Strings = preload("res://gdpatch/mods/snaptic_zh/zh_strings.gd")
-const FONT_PATH := "res://gdpatch/mods/snaptic_zh/fonts/chinese.otf"
-
+const Strings = preload("res://gdpatch/mods/snaptic_Chinese/ch_strings.gd")
+const FONT_PATH := "res://gdpatch/mods/snaptic_Chinese/fonts/NotoSansTC-Regular.otf"
+const Dialogue = preload("res://gdpatch/mods/snaptic_Chinese/ch_dialogue.gd")
 var _cjk: FontFile = null
-
+var _reported := {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -14,8 +14,15 @@ func _ready() -> void:
 		return
 	get_tree().node_added.connect(_on_node_added)
 	_translate_tree(get_tree().root)
-	_log("enabled")
 
+	# Rescan: some windows set their text again when they open.
+	var timer := Timer.new()
+	timer.wait_time = 0.5
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	timer.timeout.connect(func(): _translate_tree(get_tree().root))
+	add_child(timer)
+	timer.start()
+	_log("enabled")
 
 func _on_node_added(node: Node) -> void:
 	# Deferred: scenes set their text in _ready (setting rows, tab titles),
@@ -32,6 +39,11 @@ func _translate_tree(n: Node) -> void:
 func _translate_node(n: Node) -> void:
 	if not is_instance_valid(n):
 		return
+		
+	var res = n.get("dialogue_resource")
+	if res is Resource:
+		Dialogue.translate_resource(res)
+		
 	if n is Control:
 		_add_fallback(n)
 
@@ -58,6 +70,10 @@ func _translate_node(n: Node) -> void:
 	if n is TabContainer:
 		for i in range(n.get_tab_count()):
 			n.set_tab_title(i, Strings.zh(n.get_tab_title(i)))
+	if n is Label or n is Button or n is RichTextLabel:
+		_report_english(n, n.text)
+	if str(n.get_path()).begins_with("/root/GDPatch"):
+		return
 
 
 # Adds the Chinese font as a fallback to the fonts this control draws with.
@@ -83,3 +99,16 @@ func _load_font() -> FontFile:
 
 func _log(message: String) -> void:
 	print("SNAPTIC-Chinese: " + message)
+
+# Prints each visible control that still shows English, once, with its path.
+# Text with letters has upper != lower; Chinese characters have neither.
+func _report_english(n: Node, text: String) -> void:
+	if text.strip_edges() == "" or text.to_lower() == text.to_upper():
+		return
+	if not n.is_visible_in_tree():
+		return
+	var key := str(n.get_path())
+	if _reported.has(key):
+		return
+	_reported[key] = true
+	_log("untranslated: %s = \"%s\"" % [key, text])
